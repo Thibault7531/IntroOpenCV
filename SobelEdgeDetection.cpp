@@ -19,7 +19,7 @@ cv::Mat SobelEdgeDetection::GetEdges(cv::Mat image, int threshold, int kernelSiz
     Sobel.convertTo(SobelImage, CV_8U, -255.0/sobMax, 255.0);
 
     cv::threshold(SobelImage, SobelImage, threshold, 255, cv::THRESH_BINARY);
-    cv::cvtColor(SobelImage, SobelImage, cv::COLOR_BGR2GRAY);
+    //cv::cvtColor(SobelImage, SobelImage, cv::COLOR_BGR2GRAY);
 
     return SobelImage;
 }

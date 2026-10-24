@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <iostream>
+#include <opencv2/imgproc.hpp>
 #include <opencv5/opencv2/core.hpp>
 #include <opencv5/opencv2/highgui.hpp>
 
@@ -7,18 +8,6 @@
 #include "EdgeDetectionStats.h"
 #include "LaplaceEdgeDetection.h"
 #include "SobelEdgeDetection.h"
-
-static void onMouse(int event, int x, int y, int flags, void* userdata)
-{
-    switch (event)
-    {
-    case cv::EVENT_LBUTTONDOWN:
-        {
-            break;
-        }
-    default: break;
-    }
-}
 
 int main()
 {
@@ -99,6 +88,9 @@ SobelImageSelection:
             float averagePerformance = 0.0f;
             float averageFalsePositiveRate = 0.0f;
             float averageFalseNegativeRate = 0.0f;
+            std::vector<float> Performances;
+            std::vector<float> FalsePositiveRates;
+            std::vector<float> FalseNegativeRates;
             int imageCount = 0;
             float maxPerformance = -1.0f;
             std::string maxPerformanceImagePath;
@@ -119,13 +111,18 @@ SobelImageSelection:
                     {
                         cv::Mat edges = SobelEdgeDetection::GetEdges(image, threshold, kernelSize);
 
-                        float performance = EdgeDetectionStats::GetPerformace(image, reference);
-                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(image, reference);
-                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(image, reference);
+                        EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                        float performance = statistics.f1Score;
+                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
 
                         averagePerformance += performance;
                         averageFalsePositiveRate += falsePositiveRate;
                         averageFalseNegativeRate += falseNegativeRate;
+                        Performances.push_back(performance);
+                        FalsePositiveRates.push_back(falsePositiveRate);
+                        FalseNegativeRates.push_back(falseNegativeRate);
                         imageCount++;
 
                         if (performance > maxPerformance)
@@ -155,6 +152,9 @@ SobelImageSelection:
             std::printf("Average performance: %f\n", averagePerformance);
             std::printf("Average false positive rate: %f\n", averageFalsePositiveRate);
             std::printf("Average false negative rate: %f\n", averageFalseNegativeRate);
+            std::printf("Median performance: %f\n", Performances[Performances.size() / 2]);
+            std::printf("Median false positive rate: %f\n", FalsePositiveRates[FalsePositiveRates.size() / 2]);
+            std::printf("Median false negative rate: %f\n", FalseNegativeRates[FalseNegativeRates.size() / 2]);
             std::printf("Max performance: %f\n", maxPerformance);
             std::printf("Max performance image path: %s\n", maxPerformanceImagePath.c_str());
             std::printf("Max false positive rate: %f\n", maxFalsePositiveRate);
@@ -165,7 +165,7 @@ SobelImageSelection:
         }
         else
         {
-            cv::Mat image = cv::imread(std::filesystem::path("images") / imagePath);
+            cv::Mat image = cv::imread(std::filesystem::path("images") / imagePath, cv::IMREAD_GRAYSCALE);
             std::filesystem::path imageReferencePath = std::filesystem::path("images") / "gt" / (imagePath.stem().string() + "_gt_binary.pgm");
             cv::Mat reference = cv::imread(imageReferencePath, cv::IMREAD_GRAYSCALE);
             cv::Mat edges = SobelEdgeDetection::GetEdges(image, threshold, kernelSize);
@@ -192,6 +192,18 @@ SobelImageSelection:
                     if (kernelSize%2 == 1 && kernelSize > 0 && kernelSize <= 31)
                     {
                         edges = SobelEdgeDetection::GetEdges(image, threshold, kernelSize);
+
+                        EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                        float performance = statistics.f1Score;
+                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
+
+                        std::cout << "Performance: " << performance << std::endl;
+                        std::cout << "False Positive Rate: " << falsePositiveRate << std::endl;
+                        std::cout << "False Negative Rate: " << falseNegativeRate << std::endl;
+
+                        cv::putText(edges, "Performance: " + std::to_string(performance), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
                         cv::imshow("Edges", edges);
                     }
                 }
@@ -261,6 +273,9 @@ LaplaceImageSelection:
             float averagePerformance = 0.0f;
             float averageFalsePositiveRate = 0.0f;
             float averageFalseNegativeRate = 0.0f;
+            std::vector<float> Performances;
+            std::vector<float> FalsePositiveRates;
+            std::vector<float> FalseNegativeRates;
             int imageCount = 0;
             float maxPerformance = -1.0f;
             std::string maxPerformanceImagePath;
@@ -281,13 +296,18 @@ LaplaceImageSelection:
                     {
                         cv::Mat edges = LaplaceEdgeDetection::GetEdges(image, kernelSize, threshold);
 
-                        float performance = EdgeDetectionStats::GetPerformace(image, reference);
-                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(image, reference);
-                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(image, reference);
+                        EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                        float performance = statistics.f1Score;
+                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
 
                         averagePerformance += performance;
                         averageFalsePositiveRate += falsePositiveRate;
                         averageFalseNegativeRate += falseNegativeRate;
+                        Performances.push_back(performance);
+                        FalsePositiveRates.push_back(falsePositiveRate);
+                        FalseNegativeRates.push_back(falseNegativeRate);
                         imageCount++;
 
                         if (performance > maxPerformance)
@@ -317,6 +337,9 @@ LaplaceImageSelection:
             std::printf("Average performance: %f\n", averagePerformance);
             std::printf("Average false positive rate: %f\n", averageFalsePositiveRate);
             std::printf("Average false negative rate: %f\n", averageFalseNegativeRate);
+            std::printf("Median performance: %f\n", Performances[Performances.size() / 2]);
+            std::printf("Median false positive rate: %f\n", FalsePositiveRates[FalsePositiveRates.size() / 2]);
+            std::printf("Median false negative rate: %f\n", FalseNegativeRates[FalseNegativeRates.size() / 2]);
             std::printf("Max performance: %f\n", maxPerformance);
             std::printf("Max performance image path: %s\n", maxPerformanceImagePath.c_str());
             std::printf("Max false positive rate: %f\n", maxFalsePositiveRate);
@@ -354,6 +377,18 @@ LaplaceImageSelection:
                     if (kernelSize%2 == 1 && kernelSize > 0 && kernelSize <= 31)
                     {
                         edges = LaplaceEdgeDetection::GetEdges(image, kernelSize, threshold);
+
+                        EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                        float performance = statistics.f1Score;
+                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
+
+                        std::cout << "Performance: " << performance << std::endl;
+                        std::cout << "False Positive Rate: " << falsePositiveRate << std::endl;
+                        std::cout << "False Negative Rate: " << falseNegativeRate << std::endl;
+
+                        cv::putText(edges, "Performance: " + std::to_string(performance), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
                         cv::imshow("Edges", edges);
                     }
                 }
@@ -423,6 +458,9 @@ LaplaceImageSelection:
             float averagePerformance = 0.0f;
             float averageFalsePositiveRate = 0.0f;
             float averageFalseNegativeRate = 0.0f;
+            std::vector<float> Performances;
+            std::vector<float> FalsePositiveRates;
+            std::vector<float> FalseNegativeRates;
             int imageCount = 0;
             float maxPerformance = -1.0f;
             std::string maxPerformanceImagePath;
@@ -443,13 +481,18 @@ LaplaceImageSelection:
                     {
                         cv::Mat edges = CannyEdgeDetector::GetEdges(image, threshold1, threshold2);
 
-                        float performance = EdgeDetectionStats::GetPerformace(image, reference);
-                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(image, reference);
-                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(image, reference);
+                        EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                        float performance = statistics.f1Score;
+                        float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                        float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
 
                         averagePerformance += performance;
                         averageFalsePositiveRate += falsePositiveRate;
                         averageFalseNegativeRate += falseNegativeRate;
+                        Performances.push_back(performance);
+                        FalsePositiveRates.push_back(falsePositiveRate);
+                        FalseNegativeRates.push_back(falseNegativeRate);
                         imageCount++;
 
                         if (performance > maxPerformance)
@@ -479,6 +522,9 @@ LaplaceImageSelection:
             std::printf("Average performance: %f\n", averagePerformance);
             std::printf("Average false positive rate: %f\n", averageFalsePositiveRate);
             std::printf("Average false negative rate: %f\n", averageFalseNegativeRate);
+            std::printf("Median performance: %f\n", Performances[Performances.size() / 2]);
+            std::printf("Median false positive rate: %f\n", FalsePositiveRates[FalsePositiveRates.size() / 2]);
+            std::printf("Median false negative rate: %f\n", FalseNegativeRates[FalseNegativeRates.size() / 2]);
             std::printf("Max performance: %f\n", maxPerformance);
             std::printf("Max performance image path: %s\n", maxPerformanceImagePath.c_str());
             std::printf("Max false positive rate: %f\n", maxFalsePositiveRate);
@@ -514,6 +560,18 @@ LaplaceImageSelection:
                     threshold1 = newThreshold1;
                     threshold2 = newThreshold2;
                     edges = CannyEdgeDetector::GetEdges(image, threshold1, threshold2);
+
+                    EdgeDetectionStats::Statistics statistics = EdgeDetectionStats::GetStatistics(edges, reference);
+
+                    float performance = statistics.f1Score;
+                    float falsePositiveRate = EdgeDetectionStats::GetFalsePositiveRate(statistics);
+                    float falseNegativeRate = EdgeDetectionStats::GetFalseNegativeRate(statistics);
+
+                    std::cout << "Performance: " << performance << std::endl;
+                    std::cout << "False Positive Rate: " << falsePositiveRate << std::endl;
+                    std::cout << "False Negative Rate: " << falseNegativeRate << std::endl;
+
+                    cv::putText(edges, "Performance: " + std::to_string(performance), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
                     cv::imshow("Edges", edges);
                 }
 

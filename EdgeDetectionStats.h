@@ -6,12 +6,25 @@
 class EdgeDetectionStats
 {
 public:
-    static uint32_t GetEdgePixelCount(cv::Mat image);
-    static uint32_t GetCorrectEdgePixelCount(cv::Mat image, cv::Mat reference);
-    static uint32_t GetFalsePositivePixelCount(cv::Mat image, cv::Mat reference);
-    static uint32_t GetFalseNegativePixelCount(cv::Mat image, cv::Mat reference);
+    struct Statistics
+    {
+        uint32_t truePositive;
+        uint32_t falsePositive;
+        uint32_t falseNegative;
 
-    static float GetPerformace(cv::Mat image, cv::Mat reference);
-    static float GetFalsePositiveRate(cv::Mat image, cv::Mat reference);
-    static float GetFalseNegativeRate(cv::Mat image, cv::Mat reference);
+        float precision;
+        float recall;
+        float f1Score;
+    };
+    struct PairCandidate
+    {
+        uint32_t detectedEdgeIndex;
+        uint32_t referenceEdgeIndex;
+        float distance;
+    };
+
+    static float GetFalsePositiveRate(Statistics stats);
+    static float GetFalseNegativeRate(Statistics stats);
+
+    static Statistics GetStatistics(cv::Mat image, cv::Mat reference);
 };

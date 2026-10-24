@@ -33,5 +33,5 @@ cv::Mat LaplaceEdgeDetection::GetEdges(cv::Mat image, int aperture, int threshol
 
     cv::Mat dilated;
     cv::dilate(binary, dilated, cv::Mat());
-    return 255 - (binary);
+    return 255 - (dilated);
 }
